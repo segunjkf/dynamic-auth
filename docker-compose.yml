@@ -1,0 +1,134 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  envoy:
+    image: envoyproxy/envoy:v1.25.0
+    volumes:
+      - ./envoy.yaml:/etc/envoy/envoy.yaml:ro
+    ports:
+      - "8080:8080"  # Main proxy port
+      - "9901:9901"  # Admin interface
+    networks:
+      - metrics_net
+    depends_on:
+      - auth-service
+      - thanos-receive
+      - loki
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - LOG_LEVEL=debug
+    networks:
+      - metrics_net
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - metrics_net
+
+  grafana-agent:
+    image: grafana/agent:v0.35.0
+    volumes:
+      - ./grafana-agent-config.yaml:/etc/grafana-agent/agent.yaml:ro  # Updated path
+      - /var/log:/var/log:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: --config.file=/etc/grafana-agent/agent.yaml  # Updated path
+    environment:
+      - AGENT_USERNAME=tenant1
+      - AGENT_PASSWORD=password123
+    networks:
+      - metrics_net
+    depends_on:
+      - envoy
+
+  thanos-receive:
+    image: thanosio/thanos:v0.31.0
+    command:
+      - "receive"
+      - "--tsdb.path=/tmp/thanos/receive"
+      - "--grpc-address=0.0.0.0:10901"
+      - "--http-address=0.0.0.0:10902"
+      - "--receive.default-tenant-id=default-tenant"
+      - "--log.level=debug"
+      - "--label=receive_replica=\"0\""
+      - "--label=receive_cluster=\"poc-cluster\""
+      - "--label=environment=\"dev\""
+    ports:
+      - "10902:10902"  # HTTP endpoint
+      - "19291:19291"  # Remote write endpoint
+    volumes:
+      - thanos_data:/tmp/thanos
+    networks:
+      - metrics_net
+
+  thanos-query:
+    image: thanosio/thanos:v0.31.0
+    command:
+      - "query"
+      - "--http-address=0.0.0.0:9090"
+      - "--grpc-address=0.0.0.0:9091"
+      - "--query.replica-label=receive_replica"
+      - "--log.level=debug"
+      - "--store=thanos-receive:10901"
+    ports:
+      - "9090:9090"  # Thanos Query HTTP endpoint
+    networks:
+      - metrics_net
+    depends_on:
+      - thanos-receive
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    # environment:
+    #   - GF_SECURITY_ADMIN_PASSWORD=YourSecurePassword  # Replace with a strong password
+    #   - GF_AUTH_ANONYMOUS_ENABLED=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - metrics_net
+    depends_on:
+      - thanos-query
+      - loki
+
+  loki:
+    image: grafana/loki:2.8.0
+    command: -config.file=/etc/loki/config.yaml
+    user: "10001"  # Use the correct user ID
+    volumes:
+      - ./loki/config.yaml:/etc/loki/config.yaml:ro
+      - loki_data:/loki    # Changed from /tmp/loki to /loki
+    networks:
+      - metrics_net
+    ports:
+      - "3100:3100"
+    environment:
+      - JAEGER_AGENT_HOST=tempo
+      - JAEGER_SAMPLING_SERVER_URL=http://tempo:16686/sampling
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+networks:
+  metrics_net:
+    driver: bridge
+
+volumes:
+  redis_data:
+  thanos_data:
+  loki_data:
+  grafana_data:
