@@ -6,4 +6,4 @@ datasources:
     access: proxy
     url: http://thanos-query:9090
     isDefault: true
-    editable: false
+    editable: true

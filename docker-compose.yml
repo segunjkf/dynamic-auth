@@ -7,8 +7,8 @@ services:
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml:ro
     ports:
-      - "8080:8080"  # Main proxy port
-      - "9901:9901"  # Admin interface
+      - "8080:8080" 
+      - "9901:9901" 
     networks:
       - metrics_net
     depends_on:
@@ -40,10 +40,10 @@ services:
   grafana-agent:
     image: grafana/agent:v0.35.0
     volumes:
-      - ./grafana-agent-config.yaml:/etc/grafana-agent/agent.yaml:ro  # Updated path
+      - ./grafana-agent-config.yaml:/etc/grafana-agent/agent.yaml:ro
       - /var/log:/var/log:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    command: --config.file=/etc/grafana-agent/agent.yaml  # Updated path
+    command: --config.file=/etc/grafana-agent/agent.yaml
     environment:
       - AGENT_USERNAME=tenant1
       - AGENT_PASSWORD=password123
@@ -65,8 +65,8 @@ services:
       - "--label=receive_cluster=\"poc-cluster\""
       - "--label=environment=\"dev\""
     ports:
-      - "10902:10902"  # HTTP endpoint
-      - "19291:19291"  # Remote write endpoint
+      - "10902:10902"
+      - "19291:19291"
     volumes:
       - thanos_data:/tmp/thanos
     networks:
@@ -93,7 +93,7 @@ services:
     ports:
       - "3000:3000"
     # environment:
-    #   - GF_SECURITY_ADMIN_PASSWORD=YourSecurePassword  # Replace with a strong password
+    #   - GF_SECURITY_ADMIN_PASSWORD=YourSecurePassword 
     #   - GF_AUTH_ANONYMOUS_ENABLED=false
     volumes:
       - grafana_data:/var/lib/grafana
@@ -107,10 +107,10 @@ services:
   loki:
     image: grafana/loki:2.8.0
     command: -config.file=/etc/loki/config.yaml
-    user: "10001"  # Use the correct user ID
+    user: "10001"
     volumes:
       - ./loki/config.yaml:/etc/loki/config.yaml:ro
-      - loki_data:/loki    # Changed from /tmp/loki to /loki
+      - loki_data:/loki 
     networks:
       - metrics_net
     ports:
