@@ -231,7 +231,6 @@ func main() {
     )
     auth.RegisterAuthorizationServer(grpcServer, server)
     
-    // Start listening for connections
     lis, err := net.Listen("tcp", ":9191")
     if err != nil {
         logger.Fatal("failed to listen", zap.Error(err))
