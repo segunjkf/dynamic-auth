@@ -13,7 +13,7 @@ sequenceDiagram
     Note over E: Basic Auth header:<br/>base64(username:password)
     E->>AS: Validate credentials
     AS->>R: Check credentials hash
-    R-->>AS: Return tenant_id if valid
+    R-->>AS: Return tenant_id if valid and path == loki else just validation
     AS-->>E: OK + tenant headers
     E->>B: Forward with tenant context
 ```
