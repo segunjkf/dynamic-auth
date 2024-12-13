@@ -1,16 +1,26 @@
-# auth-service/Dockerfile
-FROM golang:1.21-alpine
+
+FROM golang:1.23-alpine AS builder
+
+RUN apk add --no-cache git
 
 WORKDIR /app
 
-# Copy go mod files first to leverage caching
 COPY go.mod .
+COPY go.sum .
+
+RUN go mod download
+
 COPY main.go .
 
-# Initialize and build
-RUN go mod tidy && \
-    go build -o auth-service
+# Build the binary
+RUN go build -o auth-service .
+
+FROM scratch
+
+WORKDIR /app
+
+COPY --from=builder /app/auth-service .
 
 EXPOSE 9191
 
-CMD ["./auth-service"]
+ENTRYPOINT ["./auth-service"]
