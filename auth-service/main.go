@@ -37,6 +37,7 @@ type AuthResult struct {
 }
 
 // NewAuthServer creates a new AuthServer instance with Redis connection
+
 func NewAuthServer(redisAddr string, logger *zap.Logger) (*AuthServer, error) {
     // Initialize Redis client with timeouts and connection pooling
     redisClient := redis.NewClient(&redis.Options{
