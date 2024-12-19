@@ -1,5 +1,5 @@
 
-# # dynamic-auth
+# Dynamic-auth
 
 ## Description
 
