@@ -1,7 +1,7 @@
-# dynamic-auth
+
 
 ```markdown
-# Project Name
+# # dynamic-auth
 
 ## Description
 
